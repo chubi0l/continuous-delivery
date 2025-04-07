@@ -2,7 +2,12 @@ name: Publish in DockerHub
 
 on:  
   workflow_dispatch:
-
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'pom.xml'
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -13,6 +18,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
+      - name: Extract version from pom.xml
+        id: get_version
+        run: echo "VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_OUTPUT
       - name: Run tests
         run: mvn test
       - name: Generate Docker image
@@ -20,4 +28,4 @@ jobs:
       - name: Login to DockerHub
         run: docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" -p "${{ secrets.DOCKERHUB_TOKEN }}" 
       - name: Push image to DockerHub
-        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/posts:v1
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/posts:${{ steps.get_version.outputs.VERSION }}
